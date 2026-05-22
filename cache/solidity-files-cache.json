@@ -1,0 +1,41 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\ADMIN\\OneDrive\\Desktop\\Study Material\\Projects\\TrueVote\\contracts\\TrueVote.sol": {
+      "lastModificationDate": 1779439274657,
+      "contentHash": "b8eea00ba3e44e141d47ef16255c77e4",
+      "sourceName": "contracts/TrueVote.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "TrueVote"
+      ]
+    }
+  }
+}
