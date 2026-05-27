@@ -1,0 +1,13 @@
+{
+  "name": "truevote-relayer",
+  "version": "0.1.0",
+  "description": "Gasless relayer for TrueVote admin operations",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["truevote", "relayer", "gasless"],
+  "author": "",
+  "license": "ISC"
+}

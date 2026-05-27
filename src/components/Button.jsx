@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { cn } from '../lib/cn';
 
 export default function Button({
   children,
@@ -10,31 +11,38 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const sizeClass = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-6 py-3 text-base',
-    lg: 'px-8 py-4 text-lg',
-  }[size];
+  const sizes = {
+    sm: 'px-3.5 py-2 text-sm rounded-lg',
+    md: 'px-6 py-3 text-sm rounded-xl',
+    lg: 'px-8 py-4 text-base rounded-xl',
+  };
 
-  const variantClass = {
+  const variants = {
     primary: 'btn-primary',
     secondary: 'btn-secondary',
     ghost: 'btn-ghost',
-  }[variant];
+    danger: 'btn-secondary border-red-500/30 text-red-200 hover:border-red-400/50',
+  };
 
   return (
     <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.05 }}
-      whileTap={{ scale: disabled ? 1 : 0.95 }}
+      whileHover={{ scale: disabled || isLoading ? 1 : 1.02 }}
+      whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
       disabled={disabled || isLoading}
-      className={`${variantClass} ${sizeClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+      className={cn(
+        variants[variant],
+        sizes[size],
+        'inline-flex items-center justify-center gap-2',
+        (disabled || isLoading) && 'opacity-50 cursor-not-allowed pointer-events-none',
+        className,
+      )}
       {...props}
     >
       {isLoading ? (
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+        <>
+          <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin" />
           <span>Loading...</span>
-        </div>
+        </>
       ) : (
         children
       )}
