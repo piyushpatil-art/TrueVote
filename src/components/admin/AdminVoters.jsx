@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Copy, Trash2, Upload, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ethers } from 'ethers';
-import { getContract, getReadContract, parseContractError, CONTRACT_ADDRESS, BASE_SEPOLIA_RPC } from '../../contract';
+import { getContract, getReadContract, parseContractError, CONTRACT_ADDRESS } from '../../contract';
 import { fetchAllElections, formatDateTime } from '../../utils/electionHelpers';
 import relayer from '../../lib/relayer';
 import GlassCard from '../GlassCard';
