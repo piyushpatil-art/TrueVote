@@ -37,6 +37,7 @@ export default function ElectionSelector({
         value={value}
         onChange={onChange}
         placeholder="Choose an election…"
+        className="bg-slate-950"
       />
       {selected && (
         <motion.div

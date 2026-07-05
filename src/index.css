@@ -35,9 +35,11 @@ body::before {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: #05050c;
 }
+
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #7c3aed, #3b82f6);
   border-radius: 4px;
@@ -70,35 +72,46 @@ body::before {
   }
 
   .btn-primary {
-    @apply relative inline-flex items-center justify-center font-semibold rounded-xl
-      bg-gradient-to-r from-violet-600 via-purple-600 to-blue-600 text-white
-      shadow-[0_0_24px_rgba(124,58,237,0.35)] border border-white/10
-      hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:border-violet-400/30
-      active:scale-[0.98] transition-all duration-300;
+    @apply relative inline-flex items-center justify-center font-semibold rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-blue-600 text-white shadow-[0_0_24px_rgba(124,58,237,0.35)] border border-white/10 hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:border-violet-400/30 active:scale-[0.98] transition-all duration-300;
   }
 
   .btn-secondary {
-    @apply relative inline-flex items-center justify-center font-semibold rounded-xl
-      bg-white/[0.06] text-white border border-white/15
-      hover:bg-white/10 hover:border-violet-500/40 hover:shadow-glow-sm
-      active:scale-[0.98] transition-all duration-300;
+    @apply relative inline-flex items-center justify-center font-semibold rounded-xl bg-white/[0.06] text-white border border-white/15 hover:bg-white/10 hover:border-violet-500/40 hover:shadow-glow-sm active:scale-[0.98] transition-all duration-300;
   }
 
   .btn-ghost {
-    @apply relative inline-flex items-center justify-center font-semibold rounded-xl
-      bg-transparent text-white/80 border border-transparent
-      hover:bg-white/5 hover:text-white hover:border-white/10
-      active:scale-[0.98] transition-all duration-300;
+    @apply relative inline-flex items-center justify-center font-semibold rounded-xl bg-transparent text-white/80 border border-transparent hover:bg-white/5 hover:text-white hover:border-white/10 active:scale-[0.98] transition-all duration-300;
   }
 
   .input-premium {
-    @apply w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white
-      placeholder:text-white/35 outline-none transition-all duration-300
-      focus:border-violet-500/50 focus:bg-white/[0.06] focus:shadow-[0_0_0_3px_rgba(124,58,237,0.15)];
+    @apply w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder:text-white/35 outline-none transition-all duration-300 focus:border-violet-500/50 focus:bg-white/[0.06] focus:shadow-[0_0_0_3px_rgba(124,58,237,0.15)];
   }
 
   .select-premium {
     @apply input-premium appearance-none cursor-pointer;
+  }
+
+  /* Improve native select dropdown visibility on dark theme */
+  select.input-premium,
+  select.select-premium {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.03);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Style the option items (most browsers respect this) */
+  select.input-premium option,
+  select.select-premium option {
+    background-color: #0b0b12; /* dark option background */
+    color: #f4f4f8; /* light text for readability */
+  }
+
+  /* Make the dropdown caret a bit more visible */
+  select.input-premium + .select-caret,
+  select.select-premium + .select-caret {
+    color: rgba(255,255,255,0.65);
   }
 
   .mesh-bg {
@@ -131,12 +144,16 @@ body::before {
 }
 
 @keyframes blob {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0px, 0px) scale(1);
   }
+
   33% {
     transform: translate(20px, -10px) scale(1.05);
   }
+
   66% {
     transform: translate(-15px, 15px) scale(0.95);
   }
@@ -196,23 +213,51 @@ body::before {
 }
 
 @keyframes grid-drift {
-  0% { transform: perspective(500px) rotateX(58deg) translateY(0); }
-  100% { transform: perspective(500px) rotateX(58deg) translateY(56px); }
+  0% {
+    transform: perspective(500px) rotateX(58deg) translateY(0);
+  }
+
+  100% {
+    transform: perspective(500px) rotateX(58deg) translateY(56px);
+  }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(1.06); }
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(1.06);
+  }
 }
 
 @keyframes node-pulse {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes link-fade {
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 0.6; }
+
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* Chart overrides */

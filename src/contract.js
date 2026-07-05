@@ -5,10 +5,16 @@ export const BASE_SEPOLIA_CHAIN_ID = '0x14a34';
 export const BASE_SEPOLIA_RPC = 'https://sepolia.base.org';
 export const BASE_SEPOLIA_EXPLORER = 'https://sepolia.basescan.org';
 
-// Updated Contract Address
+// Contract Address from environment (new deployed contract)
 export const CONTRACT_ADDRESS = 
   process.env.REACT_APP_CONTRACT_ADDRESS || 
-  '0x09c0D7D04De886051C7822f18E406Ee3B1DCa934';
+  '0xC4B8a8D9A374a21150e19e739f6CBE03C62333a9';
+
+// Debug: show which contract address the frontend is using at runtime
+try {
+  // eslint-disable-next-line no-console
+  console.info('TrueVote CONTRACT_ADDRESS ->', CONTRACT_ADDRESS);
+} catch (e) {}
 
 export const TrueVoteABI = [
   'function admin() view returns (address)',
@@ -45,8 +51,8 @@ export const TrueVoteABI = [
   // Events
   'event ElectionCreated(uint256 indexed electionId, string title, uint256 startTime, uint256 endTime)',
   'event VoteCast(uint256 indexed electionId, address indexed voter, uint256 indexed candidateId)',
-  'event VoterApproved(uint256 indexed electionId, address voter)',
-  'event VoterRemoved(uint256 indexed electionId, address voter)',
+  'event VoterApproved(uint256 indexed electionId, address indexed voter)',
+  'event VoterRemoved(uint256 indexed electionId, address indexed voter)',
 ];
 
 export const getCurrentChainId = async () => {
@@ -116,16 +122,13 @@ export const getContract = async () => {
   return new ethers.Contract(CONTRACT_ADDRESS, TrueVoteABI, signer);
 };
 
-export const getReadContract = async () => {
+export const getReadContract = () => {
   if (CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
     throw new Error('Contract not deployed. Set REACT_APP_CONTRACT_ADDRESS in .env');
   }
-  let provider;
-  if (window.ethereum) {
-    provider = new ethers.BrowserProvider(window.ethereum);
-  } else {
-    provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
-  }
+  // Always use a direct public RPC for reads — never route reads through MetaMask.
+  // MetaMask is only used for signing write transactions (getContract).
+  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
   return new ethers.Contract(CONTRACT_ADDRESS, TrueVoteABI, provider);
 };
 
@@ -135,5 +138,15 @@ export const parseContractError = (err) => {
   }
   if (err?.reason) return err.reason;
   if (err?.shortMessage) return err.shortMessage;
-  return err?.message || 'Transaction failed';
+  // Ethers may surface low-level errors like "missing revert data" when the RPC
+  // doesn't return a revert reason. Provide a clearer, user-friendly message.
+  const msg = err?.message || '';
+  if (msg.includes('missing revert data')) {
+    return 'Transaction reverted (no revert reason provided)';
+  }
+  if (msg.includes('execution reverted')) {
+    // execution reverted sometimes contains additional details; return that if present
+    return msg;
+  }
+  return msg || 'Transaction failed';
 };

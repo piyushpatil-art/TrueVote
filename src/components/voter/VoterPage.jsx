@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Vote, AlertCircle, Zap, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getContract, getReadContract, parseContractError } from '../../contract';
+import { getContract, parseContractError } from '../../contract';
 import {
   fetchAllElections,
   fetchCandidatesForElection,
@@ -38,7 +38,7 @@ export default function VoterPage({ address }) {
   useEffect(() => {
     (async () => {
       try {
-        const contract = await getReadContract();
+        const contract = await getContract();
         const list = await fetchAllElections(contract);
         setElections(list);
         const active = list.find((e) => e.status === 1);
@@ -54,7 +54,7 @@ export default function VoterPage({ address }) {
   const loadElectionData = useCallback(async () => {
     if (!electionId || !address) return;
     try {
-      const contract = await getReadContract();
+      const contract = await getContract();
       const raw = await contract.getElection(electionId);
       const e = parseElection(raw, electionId);
       setElection(e);
@@ -93,19 +93,7 @@ export default function VoterPage({ address }) {
       toast.success('Vote recorded on-chain!');
       await loadElectionData();
     } catch (err) {
-      console.warn('UGF gasless transaction failed:', err);
-      
-      // If the user cancelled/rejected MetaMask, do NOT fallback
-      const isRejection = err?.code === 'ACTION_REJECTED' || 
-                          err?.message?.toLowerCase().includes('user rejected') ||
-                          err?.message?.toLowerCase().includes('rejected');
-      if (isRejection) {
-        setVoting(false);
-        setVotingStep('idle');
-        toast.error('Vote cancelled');
-        return;
-      }
-
+      console.warn('UGF gasless transaction failed, falling back to standard gas:', err);
       try {
         setVotingStep('fallback_gas');
         const contract = await getContract();
@@ -119,19 +107,9 @@ export default function VoterPage({ address }) {
         await loadElectionData();
       } catch (fallbackErr) {
         console.error('Fallback transaction failed:', fallbackErr);
-        
-        const isFallbackRejection = fallbackErr?.code === 'ACTION_REJECTED' || 
-                                    fallbackErr?.message?.toLowerCase().includes('user rejected') ||
-                                    fallbackErr?.message?.toLowerCase().includes('rejected');
-        if (isFallbackRejection) {
-          setVoting(false);
-          setVotingStep('idle');
-          toast.error('Vote cancelled');
-        } else {
-          setErrorMessage(parseContractError(fallbackErr));
-          setVotingStep('failed');
-          toast.error('Transaction failed');
-        }
+        setErrorMessage(parseContractError(fallbackErr));
+        setVotingStep('failed');
+        toast.error('Transaction failed');
       }
     }
   };
@@ -171,7 +149,7 @@ export default function VoterPage({ address }) {
           setElectionId(id);
           setSelectedId(null);
         }}
-        className="mb-6 relative z-30"
+        className="mb-6"
       />
 
       {!electionId ? (

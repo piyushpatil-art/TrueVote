@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Copy, Trash2, Upload, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ethers } from 'ethers';
-import { getContract, getReadContract, parseContractError, CONTRACT_ADDRESS } from '../../contract';
+import { getContract, getReadContract, parseContractError, CONTRACT_ADDRESS, BASE_SEPOLIA_RPC } from '../../contract';
 import { fetchAllElections, formatDateTime } from '../../utils/electionHelpers';
 import relayer from '../../lib/relayer';
 import GlassCard from '../GlassCard';
@@ -88,7 +88,8 @@ export default function AdminVoters({ address }) {
         setElections([]);
         return;
       }
-      const contract = await getReadContract();
+      // Use direct RPC — not MetaMask — for read operations
+      const contract = getReadContract();
       const list = await fetchAllElections(contract);
       setElections(list);
       if (list.length > 0 && !selectedElection) {
@@ -105,53 +106,77 @@ export default function AdminVoters({ address }) {
   const loadVoters = useCallback(async () => {
     if (!selectedElection) return;
     setRefreshing(true);
+
+    // Helper: sleep to avoid rate limiting on public RPC
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
     try {
-      const contract = await getReadContract();
+      // Use a direct public RPC for all READ operations — never MetaMask for reads
+      const readContract = getReadContract();
+      // Reuse the provider that getReadContract() already created
+      const readProvider = readContract.runner;
 
       let whitelisted = [];
-      
-      // Try primary method: getWhitelistedVoters
+
+      // --- Attempt 1: Direct contract getter (fastest path) ---
       try {
-        whitelisted = await contract.getWhitelistedVoters(selectedElection);
-        console.log(`✓ Loaded ${whitelisted.length} whitelisted voters for election ${selectedElection}`);
-      } catch (primaryErr) {
-        console.warn("getWhitelistedVoters not available on contract:", primaryErr.message);
-        
-        // Fallback: Try to get count and show message
-        try {
-          const count = await contract.getWhitelistedCount(selectedElection);
-          console.log(`Contract has ${count} approved voters but getWhitelistedVoters is not implemented`);
-          toast.error('Voter list function not available. Your contract may need an update.');
-          setVoters([]);
-          setRefreshing(false);
-          return;
-        } catch (countErr) {
-          console.warn("Neither voter retrieval method available");
-          toast.error('Unable to load voters: contract function not found');
-          setVoters([]);
-          setRefreshing(false);
-          return;
+        whitelisted = await readContract.getWhitelistedVoters(selectedElection);
+        console.log(`✓ Loaded ${whitelisted.length} whitelisted voters via contract getter`);
+      } catch (getterErr) {
+        console.warn('getWhitelistedVoters unavailable, falling back to sequential event scan:', getterErr.message);
+
+        // --- Attempt 2: Sequential chunk event scan (rate-limit safe) ---
+        const approvedAddrs = new Set();
+        const latestBlock = await readProvider.getBlockNumber();
+        const blockWindow = 2000;
+
+        // Scan from the current block back up to 100k blocks (enough for ~55 hours on Base Sepolia)
+        const maxLookback = Math.max(0, latestBlock - 100000);
+
+        const approvedFilter = readContract.filters.VoterApproved(selectedElection);
+        const removedFilter  = readContract.filters.VoterRemoved(selectedElection);
+
+        for (let toBlock = latestBlock; toBlock > maxLookback; toBlock -= blockWindow) {
+          const fromBlock = Math.max(maxLookback, toBlock - blockWindow + 1);
+          try {
+            const [approvedEvs, removedEvs] = await Promise.all([
+              readContract.queryFilter(approvedFilter, fromBlock, toBlock),
+              readContract.queryFilter(removedFilter,  fromBlock, toBlock),
+            ]);
+            for (const ev of approvedEvs) {
+              if (ev.args?.[1]) approvedAddrs.add(ev.args[1]);
+            }
+            for (const ev of removedEvs) {
+              if (ev.args?.[1]) approvedAddrs.delete(ev.args[1]);
+            }
+          } catch (chunkErr) {
+            console.warn(`Chunk ${fromBlock}-${toBlock} failed, skipping:`, chunkErr.message);
+          }
+          // Small delay between chunks to avoid rate limiting on public RPC
+          await sleep(150);
         }
+
+        whitelisted = Array.from(approvedAddrs);
+        console.log(`✓ Found ${whitelisted.length} whitelisted voters via sequential event scan`);
       }
 
-      if (!whitelisted || whitelisted.length === 0) {
-        console.log("No voters found for this election");
+      if (whitelisted.length === 0) {
         setVoters([]);
-        setRefreshing(false);
         return;
       }
 
-      const votersWithStatus = await Promise.all(
-        whitelisted.map(async (addr) => ({
-          address: addr,
-          voted: await contract.hasVoted(selectedElection, addr).catch(() => false),
-        }))
-      );
+      // Fetch hasVoted status sequentially (one by one) to avoid rate limiting
+      const votersWithStatus = [];
+      for (const addr of whitelisted) {
+        const voted = await readContract.hasVoted(selectedElection, addr).catch(() => false);
+        votersWithStatus.push({ address: addr, voted });
+        await sleep(100);
+      }
 
       console.log(`✓ Fetched voting status for ${votersWithStatus.length} voters`);
       setVoters(votersWithStatus);
     } catch (err) {
-      console.error("Error loading voters:", err);
+      console.error('Error loading voters:', err);
       toast.error(parseContractError(err));
       setVoters([]);
     } finally {

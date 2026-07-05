@@ -251,18 +251,25 @@ export default function AdminCandidates({ address }) {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <GlassCard hover={false} className="!p-6">
           <label className="text-sm font-semibold text-white/70 mb-3 block">Select Election</label>
-          <select
-            value={selectedElection || ''}
-            onChange={(e) => setSelectedElection(Number(e.target.value))}
-            className="input-premium w-full"
-          >
-            <option value="">Choose an election...</option>
-            {elections.map((election) => (
-              <option key={election.id} value={election.id}>
-                #{election.id} - {election.title}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedElection || ''}
+              onChange={(e) => setSelectedElection(Number(e.target.value))}
+              className="select-premium w-full pr-10"
+            >
+              <option value="">Choose an election...</option>
+              {elections.map((election) => (
+                <option key={election.id} value={election.id}>
+                  #{election.id} - {election.title}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none select-caret">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
           {currentElection && (
             <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
               <p className="text-xs text-white/60">

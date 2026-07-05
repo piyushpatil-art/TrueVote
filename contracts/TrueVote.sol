@@ -34,6 +34,8 @@ contract TrueVote {
     mapping(uint256 => mapping(uint256 => Candidate)) public candidates;
     mapping(uint256 => mapping(address => bool)) public voted;
     mapping(uint256 => mapping(address => bool)) public approvedVoters;
+    mapping(uint256 => address[]) public whitelistedVotersList;
+    mapping(uint256 => mapping(address => uint256)) private voterIndexMap;
 
     event ElectionCreated(
         uint256 indexed electionId,
@@ -198,8 +200,12 @@ contract TrueVote {
             elections[electionId].status != ElectionStatus.Ended,
             "Election ended"
         );
-        approvedVoters[electionId][voter] = true;
-        emit VoterApproved(electionId, voter);
+        if (!approvedVoters[electionId][voter]) {
+            approvedVoters[electionId][voter] = true;
+            voterIndexMap[electionId][voter] = whitelistedVotersList[electionId].length;
+            whitelistedVotersList[electionId].push(voter);
+            emit VoterApproved(electionId, voter);
+        }
     }
 
     function removeVoter(uint256 electionId, address voter)
@@ -207,8 +213,19 @@ contract TrueVote {
         onlyAdmin
         validElection(electionId)
     {
-        approvedVoters[electionId][voter] = false;
-        emit VoterRemoved(electionId, voter);
+        if (approvedVoters[electionId][voter]) {
+            approvedVoters[electionId][voter] = false;
+            uint256 idx = voterIndexMap[electionId][voter];
+            address[] storage voters = whitelistedVotersList[electionId];
+            if (idx < voters.length) {
+                address lastVoter = voters[voters.length - 1];
+                voters[idx] = lastVoter;
+                voterIndexMap[electionId][lastVoter] = idx;
+                voters.pop();
+                delete voterIndexMap[electionId][voter];
+            }
+            emit VoterRemoved(electionId, voter);
+        }
     }
 
     function approveVotersBatch(uint256 electionId, address[] calldata voters)
@@ -222,8 +239,10 @@ contract TrueVote {
         );
         for (uint256 i = 0; i < voters.length; i++) {
             address voter = voters[i];
-            if (voter != address(0)) {
+            if (voter != address(0) && !approvedVoters[electionId][voter]) {
                 approvedVoters[electionId][voter] = true;
+                voterIndexMap[electionId][voter] = whitelistedVotersList[electionId].length;
+                whitelistedVotersList[electionId].push(voter);
                 emit VoterApproved(electionId, voter);
             }
         }
@@ -282,6 +301,14 @@ contract TrueVote {
     {
         Candidate storage c = candidates[electionId][candidateId];
         return (c.name, c.party, c.voteCount, c.exists);
+    }
+
+    function getWhitelistedVoters(uint256 electionId) external view returns (address[] memory) {
+        return whitelistedVotersList[electionId];
+    }
+
+    function getWhitelistedCount(uint256 electionId) external view returns (uint256) {
+        return whitelistedVotersList[electionId].length;
     }
 
     function isApprovedVoter(uint256 electionId, address voter) external view returns (bool) {
