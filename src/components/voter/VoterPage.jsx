@@ -182,7 +182,9 @@ export default function VoterPage({ address }) {
                   ? 'You have voted in this election'
                   : eligibility.allowed
                     ? 'You are eligible to vote'
-                    : eligibility.reason || 'Not eligible'}
+                    : eligibility.reason === 'Election is not active'
+                      ? 'Voting is not active yet. Please wait for the admin to activate this election.'
+                      : eligibility.reason || 'Not eligible'}
               </p>
             </div>
           </GlassCard>
