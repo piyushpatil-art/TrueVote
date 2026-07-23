@@ -149,7 +149,7 @@ export default function VoterPage({ address }) {
           setElectionId(id);
           setSelectedId(null);
         }}
-        className="mb-6"
+        className="mb-6 relative z-30"
       />
 
       {!electionId ? (
